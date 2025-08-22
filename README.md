@@ -1,11 +1,90 @@
-The Movie Genre Scraper is a Python-based desktop automation tool that simplifies the process of collecting movie data from IMDb. With a clean and interactive Tkinter GUI, users can select a movie genre from the interface, and the tool will automatically scrape the top 30 movies in that category using Selenium WebDriver with Firefox (GeckoDriver).
 
-The program gathers important details for each title, including the movie name, genre, release year, runtime, IMDb rating, and a brief description. Once collected, this information is exported into a structured CSV file saved directly on the user’s Desktop, making it easy to access, analyze, or share without requiring technical skills.
+🎬 Movie Genre Scraper
+📌 Project Description
 
-The tool is designed to combine the power of web automation with an easy-to-use graphical interface. Instead of manually browsing IMDb, users simply select a genre and click a button. Behind the scenes, the scraper navigates IMDb, handles popups, scrolls to the correct elements, and extracts the required information. This approach saves time and ensures accurate, consistent data.
+This project is a Movie Genre Scraper built with Python. It allows users to interactively select a movie genre from a graphical user interface (GUI) and automatically fetch the top 30 movies of that genre from IMDb
+.
 
-Another strength of the project is its support for creating a standalone executable (.exe) using PyInstaller. This allows the scraper to run on any Windows system without requiring a Python installation. The executable includes all dependencies, along with GeckoDriver, so users can simply download and run the program.
+The application uses Selenium WebDriver to automate browser actions, navigates to the IMDb search page, and scrapes movie details such as:
 
-The project highlights the practical use of Python for automation, GUI development, and data extraction. It is particularly useful for students, researchers, and movie enthusiasts who want to analyze IMDb data across genres. Since the results are exported to CSV, they can be further examined in Excel, Python, or visualization tools to uncover trends and insights.
+Movie Name (cleaned without serial numbers)
 
-In summary, the Movie Genre Scraper transforms a tedious manual process into a streamlined, one-click solution, demonstrating how Python can bring together automation and usability in a practical, real-world project.
+Genre (selected by the user)
+
+Release Year
+
+Movie Length/Runtime
+
+IMDb Rating
+
+Description/Plot summary
+
+Once the scraping process is complete, the program saves the extracted data into a CSV file on the user's Desktop. The file is named after the selected genre (e.g., Action_movies.csv).
+
+The program is designed with a user-friendly GUI using Tkinter, which makes it accessible for non-technical users as well. The GUI includes radio buttons for genre selection, a submit button to start scraping, and status messages to inform users about progress and success.
+
+The scraper is optimized to:
+
+Handle cookie pop-ups on IMDb.
+
+Run in headless mode (without opening the browser window).
+
+Gracefully handle missing fields (e.g., if year, rating, or description is unavailable).
+
+Provide feedback in case of errors.
+
+This tool can be useful for:
+
+Movie enthusiasts wanting quick access to top movies by genre.
+
+Students or researchers collecting data for analysis.
+
+Automation learners exploring Selenium and Tkinter integration.
+
+⚙️ Technologies, Software & Libraries Used
+
+Python 3.x (Programming Language)
+
+Selenium (Web scraping and browser automation)
+
+Geckodriver (Required for running Selenium with Firefox)
+
+Firefox Browser (Target browser for automation)
+
+Tkinter (Built-in Python library for GUI development)
+
+CSV module (For exporting scraped data to CSV)
+
+OS module (For file and path handling)
+
+Time module (For wait/sleep during scraping)
+
+Re (Regular Expressions) (For cleaning and extracting text like movie names and years)
+
+🚀 How It Works
+
+Launch the program.
+
+A window appears asking the user to select a movie genre.
+
+When the user clicks Submit, the scraper opens IMDb in a headless Firefox browser.
+
+The script selects the chosen genre, clicks "See Results," and scrapes the top 30 movies.
+
+Data is saved to a CSV file on the Desktop.
+
+A success message appears once the file is created.
+
+📂 Output Example (CSV Columns)
+
+Name
+
+Genre
+
+Year
+
+Length
+
+Rating
+
+Description
