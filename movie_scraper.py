@@ -1,0 +1,220 @@
+import os
+import csv
+import time
+import re
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+
+class MovieGenreScraper:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Pick the Movie Genre")
+        self.root.geometry("500x600")
+        self.root.resizable(False, False)
+
+        # Configure styles
+        self.style = ttk.Style()
+        self.style.configure('TFrame', background='#2c3e50')
+        self.style.configure('TLabel', background='#2c3e50', foreground='#ecf0f1', font=('Helvetica', 14))
+        self.style.configure('Title.TLabel', font=('Helvetica', 18, 'bold'))
+        self.style.configure('TRadiobutton', background='#2c3e50', foreground='#ecf0f1', font=('Helvetica', 12))
+        self.style.configure('TButton', font=('Helvetica', 12), padding=10)
+        self.style.map('TButton', background=[('active', '#3498db'), ('!disabled', '#2980b9')])
+
+        # Create main frame
+        self.main_frame = ttk.Frame(root)
+        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # Title
+        title_label = ttk.Label(self.main_frame, text="Pick the Movie Genre", style='Title.TLabel')
+        title_label.pack(pady=(0, 20))
+
+        # Genre selection
+        genre_frame = ttk.Frame(self.main_frame)
+        genre_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.genre_var = tk.StringVar()
+
+        # List of genres with their CSS selectors
+        self.genres = {
+            "Action": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(1)",
+            "Adventure": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(2)",
+            "Animation": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(3)",
+            "Biography": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(4)",
+            "Comedy": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(5)",
+            "Crime": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(6)",
+            "Documentary": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(7)",
+            "Drama": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(8)",
+            "Family": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(9)",
+            "Fantasy": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(10)",
+            "Horror": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(14)",
+            "Mystery": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(17)",
+            "Romance": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(20)",
+            "Sci-fi": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(21)",
+            "Thriller": "#accordion-item-genreAccordion > div:nth-child(1) > section:nth-child(1) > button:nth-child(25)"
+        }
+
+        # Create radio buttons for each genre
+        for i, genre in enumerate(self.genres.keys()):
+            rb = ttk.Radiobutton(
+                genre_frame,
+                text=genre,
+                variable=self.genre_var,
+                value=genre
+            )
+            rb.grid(row=i // 3, column=i % 3, sticky="w", padx=5, pady=5)
+
+        # Submit button
+        submit_button = ttk.Button(
+            self.main_frame,
+            text="Submit",
+            command=self.start_scraping,
+            style='TButton'
+        )
+        submit_button.pack(pady=20)
+
+        # Status label
+        self.status_label = ttk.Label(self.main_frame, text="", style='TLabel')
+        self.status_label.pack()
+
+
+        # Configure Firefox options (headless mode)
+        self.firefox_options = Options()
+        self.firefox_options.add_argument("--headless")  # Run without UI
+        self.firefox_options.add_argument("--disable-gpu")  # Optional for stability
+        self.firefox_options.add_argument("--window-size=1920,1080")  # Ensure proper rendering size
+
+    def start_scraping(self):
+        selected_genre = self.genre_var.get()
+
+        if not selected_genre:
+            messagebox.showwarning("Warning", "Please select a genre first!")
+            return
+
+        self.status_label.config(text=f"Scraping top 30 {selected_genre} movies...")
+        self.root.update()
+
+        try:
+            # Initialize Firefox driver
+            driver_folder = os.path.join(os.path.dirname(__file__), 'Driver')
+            geckodriver_path = os.path.join(driver_folder, 'geckodriver.exe')
+            service = Service(geckodriver_path)
+            driver = webdriver.Firefox(service=service, options=self.firefox_options)
+            driver.maximize_window()
+
+            # Open IMDb search page
+            driver.get("https://www.imdb.com/search/title/")
+            time.sleep(5)
+
+            # Handle cookie popup
+            try:
+                decline_button = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='reject-button']"))
+                )
+                decline_button.click()
+                time.sleep(2)
+            except:
+                pass
+
+            # Wait for and click genre button
+            genre_selector = self.genres[selected_genre]
+            genre_button = WebDriverWait(driver, 20).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, genre_selector))
+            )  # <-- Closing parenthesis fixed here
+
+            # Scroll to element and click using JavaScript
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", genre_button)
+            time.sleep(1)
+            driver.execute_script("arguments[0].click();", genre_button)
+
+            # Click see results button
+            see_results_button = WebDriverWait(driver, 20).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button.ipc-btn--single-padding"))
+            )
+            see_results_button.click()
+            time.sleep(5)
+
+            # Scrape movie data
+            movies = []
+            for i in range(1, 31):
+                try:
+                    movie_data = {}
+
+                    # Name - remove leading serial number (e.g., "1. ")
+                    name_selector = f"li.ipc-metadata-list-summary-item:nth-child({i}) h3.ipc-title__text"
+                    raw_name = driver.find_element(By.CSS_SELECTOR, name_selector).text
+                    movie_data['Name'] = re.sub(r"^\d+\.\s*", "", raw_name)
+
+                    # Genre
+                    movie_data['Genre'] = selected_genre
+
+                    # Year - clean to first 4-digit year only
+                    year_selector = f"li.ipc-metadata-list-summary-item:nth-child({i}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > span:nth-child(1)"
+                    try:
+                        raw_year = driver.find_element(By.CSS_SELECTOR, year_selector).text
+                        match = re.search(r"\b\d{4}\b", raw_year)
+                        movie_data['Year'] = match.group(0) if match else "N/A"
+                    except:
+                        movie_data['Year'] = "N/A"
+
+                    # Length
+                    length_selector = f"li.ipc-metadata-list-summary-item:nth-child({i}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > span:nth-child(2)"
+                    try:
+                        movie_data['Length'] = driver.find_element(By.CSS_SELECTOR, length_selector).text
+                    except:
+                        movie_data['Length'] = "N/A"
+
+                    # Rating
+                    try:
+                        rating_selector = f"li.ipc-metadata-list-summary-item:nth-child({i}) span.ipc-rating-star"
+                        raw_rating = driver.find_element(By.CSS_SELECTOR, rating_selector).text
+                        movie_data['Rating'] = raw_rating.split()[0] if raw_rating else "N/A"
+                    except:
+                        movie_data['Rating'] = "N/A"
+
+                    # Description
+                    try:
+                        desc_selector = f"li.ipc-metadata-list-summary-item:nth-child({i}) div.ipc-html-content-inner-div"
+                        movie_data['Description'] = driver.find_element(By.CSS_SELECTOR, desc_selector).text
+                    except:
+                        movie_data['Description'] = "N/A"
+
+                    movies.append(movie_data)
+
+                except Exception as e:
+                    print(f"Error scraping movie {i}: {str(e)}")
+                    continue
+
+            # Save to CSV
+            desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+            csv_file = os.path.join(desktop_path, f"{selected_genre}_movies.csv")
+
+            with open(csv_file, 'w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=['Name', 'Genre', 'Year', 'Length', 'Rating', 'Description'])
+                writer.writeheader()
+                writer.writerows(movies)
+
+            self.status_label.config(text=f"Success! Saved to {csv_file}")
+            messagebox.showinfo("Success", f"Top 30 {selected_genre} movies saved to your desktop!")
+
+        except Exception as e:
+            self.status_label.config(text="Error occurred during scraping")
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
+        finally:
+            try:
+                driver.quit()
+            except:
+                pass
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MovieGenreScraper(root)
+    root.mainloop()
